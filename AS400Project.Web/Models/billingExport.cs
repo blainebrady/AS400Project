@@ -75,7 +75,6 @@ namespace AS400Project.Web.Models
         public DateTime P2Expr { get; set; }
         public int P2CovC { get; set; }
         public string P2Calc { get; set; }
-        public string PrdCovL2 { get; set; }
         public string SelNam1 { get; set; }
         public string SefNam1 { get; set; }
         public int SeIDN1 { get; set; }

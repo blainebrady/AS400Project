@@ -7,6 +7,7 @@ namespace AS400Project.Services
     {
         Task<TEntity> CreateAsync(TEntity entity);
         Task<TEntity> ReadAsync(int id, bool Tracking = true);
+        
         Task<TEntity> UpdateAsync(int id, TEntity updateEntity);
         Task<TEntity> ParseType(string[] header, string[] _line, TEntity entity);
     }

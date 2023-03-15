@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Reflection;
 using AS400Project.Data;
 
@@ -29,6 +30,15 @@ namespace AS400Project.Services
                 query = query.AsNoTracking();
             return await query.FirstOrDefaultAsync(entity => entity.Id == id);
         }
+        public virtual async Task<List<TEntity>> ReadAllAsync(bool tracking = true)
+        {
+            IQueryable<TEntity> query = _ApiDbContext.Set<TEntity>();
+            if (!tracking)
+                query = query.AsNoTracking();
+
+            return await query.ToListAsync();
+        }
+
         public virtual async Task<TEntity> UpdateAsync(int id, TEntity updateEntity)
         {
             //check that the record exists

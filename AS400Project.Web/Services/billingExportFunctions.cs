@@ -1,4 +1,5 @@
 ﻿using AS400Project.Data;
+using AS400Project.Services;
 using AS400Project.Web.Models;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -15,6 +16,8 @@ namespace AS400Project.Web.Services
     {
         public billingExport inComing { get; set; } 
         public X_SUSMSTP susMstP {get; set;}                                //this will be the outgoing class
+        public List<PrdCovP> PrdCovL1 { get; set; }
+        public List<PrdCovP> PrdCovL2 { get; set; }
         public char GapCovc { get; private set; }
         private DateTime sysDate = DateTime.Now;
         private List<string> keyFields;
@@ -182,7 +185,7 @@ namespace AS400Project.Web.Services
                 string Key04_Fld01 = inComing.SeDebt + inComing.SeFut1 + inComing.SeFut2;
                 inComing.PrdCovL2.Prime(Key04_Fld01, "", "");
 
-                while (PrdCovL2.ReadNext())
+                while (PrdCovP2.ReadNext())
                 {
                     if (inComing.SeEffP <= inComing.P2Expr)
                     {

@@ -14,6 +14,7 @@ namespace AS400Project.Web.Controllers
         where TEntity : class, IImport
     {
         protected readonly FileConvert<TEntity> _service;
+        protected readonly BaseService<TEntity> _baseService;
         protected readonly IConfiguration _configuration;
 
         protected IBaseController([NotNull] FileConvert<TEntity> service, IConfiguration configuration)
@@ -35,7 +36,9 @@ namespace AS400Project.Web.Controllers
 
                     //save the file locally for posterity
                     string textString = fs.SaveFile(files, settings.fileDirectory);
-                    //convert the space-delimited string to a generic collection
+                    //get the companion tables
+                    
+
                     foreach (IFormFile file in files)
                     {
                         fileName = file.FileName;
@@ -74,6 +77,7 @@ namespace AS400Project.Web.Controllers
 
             return Ok(entity);
         }
+
         private List<Diagram> convertBillingExport()
         {
             List<Diagram> diagram = new List<Diagram>
