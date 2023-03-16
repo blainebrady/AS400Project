@@ -3,7 +3,7 @@ using AS400Project.Services;
 using AS400Project.Web.Models;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
+using System.Linq;
 using System.ComponentModel;
 using System.Diagnostics.Metrics;
 using System.Runtime.Intrinsics.X86;
@@ -17,7 +17,7 @@ namespace AS400Project.Web.Services
         public billingExport inComing { get; set; } 
         public X_SUSMSTP susMstP {get; set;}                                //this will be the outgoing class
         public List<PrdCovP> PrdCovL1 { get; set; }
-        public List<PrdCovP> PrdCovL2 { get; set; }
+        public List<PrdCovP2> PrdCovL2 { get; set; }
         public char GapCovc { get; private set; }
         private DateTime sysDate = DateTime.Now;
         private List<string> keyFields;
@@ -176,21 +176,20 @@ namespace AS400Project.Web.Services
                 }
                 LType += inComing.SeLend;
 
-                decimal SmDebt = 99000;
+                susMstP.SmDebt = 99000;
                 if (GapCovc != '0')
                 {
-                    SmDebt = 0;
+                    susMstP.SmDebt = 0;
                 }
 
                 string Key04_Fld01 = inComing.SeDebt + inComing.SeFut1 + inComing.SeFut2;
-                inComing.PrdCovL2.Prime(Key04_Fld01, "", "");
-
-                while (PrdCovP2.ReadNext())
+                
+                foreach (var item in PrdCovL2)
                 {
-                    if (inComing.SeEffP <= inComing.P2Expr)
+                    if (inComing.SeEffP <= item.P2Expr)
                     {
-                        SmDebt = inComing.P2CovC;
-                        inComing.SeCalc = inComing.P2Calc;
+                        susMstP.SmDebt = item.P2CovC;
+                        inComing.SeCalc = item.P2Calc;
                         break;
                     }
                 }
@@ -227,19 +226,17 @@ namespace AS400Project.Web.Services
                 {
                     inComing.SeDis = "J07E";
                 }
-
+                //might not need these two items
                 string Key03_Fld01 = inComing.SeDis;
                 string Key03_Fld02 = inComing.SeCalc;
-                bool found = false;
-                PrdCovL1.Seek(Key03_Fld01, Key03_Fld02, SeekMode.SetLL);
-                while (!PrdCovL1.Eof() && !found)
+                
+                foreach (var item in PrdCovL1)
                 {
-                    if (inComing.SeEffD >= inComing.PCEfft && inComing.SeEffD <= inComing.PcExpr)
+                    if (inComing.SeEffD >= item.PCEfft && inComing.SeEffD <= item.PcExpr)
                     {
-                        susMstP.SmDis = inComing.PcCovC;
-                        found = true;
+                        susMstP.SmDis = item.PcCovC;
+                        break;
                     }
-                    PrdCovL1.Seek(Key03_Fld01, Key03_Fld02, SeekMode.Next);
                 }
             }
         }
@@ -250,52 +247,47 @@ namespace AS400Project.Web.Services
         }
         public void Form()
         {
-            string F1Calc = "";
-            string Key_Calc = "";
-            if (inComing.SeForm.StringSafe().Length !=0)
+            List<FrmMstL1> frmMstL1 = new List<FrmMstL1>();
+            List<FrmMstL2> frmMstL2 = new List<FrmMstL2>();
+            if (inComing.SeForm.StringSafe().Length >0)
             {
                 if (string.IsNullOrWhiteSpace(inComing.SeType) && string.IsNullOrWhiteSpace(inComing.SeCalc))
                 {
-                    Key05.Setll(FrmMstL1);
-                    FrmMstL1.ReadEqual(Key05);
-                    while (!FrmMstL1.IsEndOfData && inComing.SeEfft >= inComing.F1Efft && inComing.SeEfft < inComing.F1Expr)
+                    foreach(var item in frmMstL1)
                     {
-                        F1Calc = inComing.SeCalc;
-                        break;
-                    }
-                }
-                else if (inComing.SeForm.StringSafe().Length==0)
-                {
-                    if (!string.IsNullOrWhiteSpace(inComing.SeType) && !string.IsNullOrWhiteSpace(inComing.SeCalc))
-                    {
-                        Key_Calc = inComing.SeCalc;
-                        if (!string.IsNullOrWhiteSpace(inComing.SeLend))
+                        if (inComing.SeEfft >= item.F1Efft && inComing.SeEfft < item.F1Expr)
                         {
-                            Key06.Setll(FrmMstL2);
-                            FrmMstL2.ReadEqual(Key06);
-                            while (!FrmMstL2.IsEndOfData && inComing.SeEfft >= inComing.F2Efft && inComing.SeEfft < inComing.F2Expr)
-                            {
-                                inComing.SeForm = inComing.F2Form;
-                                break;
-                            }
+                            item.F1Calc = inComing.SeCalc;
+                            break;
                         }
-                        else
+                    }
+                    
+                
+                
+                }
+            }
+   
+            if (inComing.SeForm.StringSafe().Length==0) // check if SeForm is blank
+            {
+                if (inComing.SeType.StringSafe().Length>0 && inComing.SeCalc.StringSafe().Length>0) // check if SeType and SeCalc are not blank
+                {
+                    var keyCalc = frmMstL2.Find(x=>x.F2CALC == inComing.SeCalc); // initialize a search key with the calculation method
+                    if(keyCalc != null)
+                    if (inComing.SeLend.StringSafe().Length>0) // check if SeLend is not blank
+                    {
+                        var key06 = frmMstL2.Find(x=>x.F2Type == inComing.SeType && x.F2Lend == inComing.SeLend); // initialize a search key with the type and lending type
+                        if (key06 != null) // search for the first record with the given type and lending type
                         {
-                            Key07.Setll(FrmMstL2);
-                            FrmMstL2.ReadEqual(Key07);
-                            while (!FrmMstL2.IsEndOfData && inComing.SeEfft >= inComing.F2Efft && inComing.SeEfft < inComing.F2Expr)
-                            {
-                                inComing.SeForm = inComing.F2Form;
-                                break;
-                            }
+                            if (inComing.SeEfft >= key06.F2Efft && inComing.SeEfft < key06.F2Efft)
+                                {
+                                    inComing.SeForm = key06.F2Form; // set SeForm to the form number
+                                }
+                            
                         }
                     }
                 }
             }
 
- //           go
- //           Copy code                                                     find out what this is
-        // Default
             if (string.IsNullOrWhiteSpace(inComing.SeCalc))
             {
                 if (inComing.SeAgnt >= "D " && inComing.SeAgnt <= "D99999 ")

@@ -40,8 +40,6 @@ namespace AS400Project.Web.Models
         public int SeTrmP { get; set; }
         public int SeFut17 { get; set; }
         public int SeForm { get; set; }
-        public DateTime F1Efft { get; set; }
-        public DateTime F1Expr { get; set; }
         public int FrmMstL1 { get; set; }
         public string SeCalc { get; set; }
         public int F1Calc { get; set; }
@@ -53,9 +51,6 @@ namespace AS400Project.Web.Models
         public int F2Form { get; set; }
         public decimal Key02_Fld01 { get; set; }
         public string Key02_Fld02 { get; set; }
-        public DateTime PCEfft { get; set; }
-        public DateTime PcExpr { get; set; }
-        public int PcCovC { get; set; }
         public string S07R { get; set; }
         public string Key03_Fld01 { get; set; }
         public string Key03_Fld02 { get; set; }
@@ -72,9 +67,6 @@ namespace AS400Project.Web.Models
         public string SeFut1 { get; set; }
         public string SeFut2 { get; set; }
         public string Key04_Fld01 { get; set; }
-        public DateTime P2Expr { get; set; }
-        public int P2CovC { get; set; }
-        public string P2Calc { get; set; }
         public string SelNam1 { get; set; }
         public string SefNam1 { get; set; }
         public int SeIDN1 { get; set; }
