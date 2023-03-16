@@ -119,6 +119,7 @@ namespace AS400Project.Data
         public virtual int SmExcP { get; set; }
         public virtual string SmUsrA { get; set; }
         public virtual DateTime SmDatU { get; set; }
+        public virtual DateTime SmData { get; set; }
         public virtual string SmUsrU { get; set; }
         public virtual string SmFlag { get; set; }
         public virtual decimal SmCnl { get; set; }
@@ -147,6 +148,7 @@ namespace AS400Project.Data
         public virtual DateTime SmGDate { get; set; }
         public virtual decimal Smmntf { get; set; }
         public virtual string SmCert2 { get; set; }
+
         public static void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<X_SUSMSTP>().Property(x => x.SmAgnt);
@@ -281,6 +283,7 @@ namespace AS400Project.Data
             modelBuilder.Entity<X_SUSMSTP>().Property(x => x.SmDebt);
             modelBuilder.Entity<X_SUSMSTP>().Property(x => x.SmFut1);
             modelBuilder.Entity<X_SUSMSTP>().Property(x => x.SmFut2);
+            modelBuilder.Entity<X_SUSMSTP>().Property(x => x.SmData);
         }
     }
 }

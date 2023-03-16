@@ -18,8 +18,10 @@ namespace AS400Project.Web.Services
         public X_SUSMSTP susMstP {get; set;}                                //this will be the outgoing class
         public List<PrdCovP> PrdCovL1 { get; set; }
         public List<PrdCovP2> PrdCovL2 { get; set; }
-        public char GapCovc { get; private set; }
-        private DateTime sysDate = DateTime.Now;
+        public int GapCovC { get; set; }
+        private string WrkNameS { get; set; }
+        private string CertHold { get; set; }
+        private readonly DateTime sysDate = DateTime.Now;
         private List<string> keyFields;
         public billingExportFunctions(billingExport _inComing)
         {
@@ -58,7 +60,7 @@ namespace AS400Project.Web.Services
             DateTime WorkDate2 = new DateTime(2003, 6, 18);
             DateTime WorkDate3 = new DateTime(2005, 4, 29);
             int Diff = 0;
-            char GapCovC = '\0';
+            GapCovC = 0;
             string CertHold = string.Empty;
             string Life_Shrt = string.Empty;
             string Dis_Shrt = string.Empty;
@@ -177,7 +179,7 @@ namespace AS400Project.Web.Services
                 LType += inComing.SeLend;
 
                 susMstP.SmDebt = 99000;
-                if (GapCovc != '0')
+                if (GapCovC != 0)
                 {
                     susMstP.SmDebt = 0;
                 }
@@ -272,54 +274,48 @@ namespace AS400Project.Web.Services
                 if (inComing.SeType.StringSafe().Length>0 && inComing.SeCalc.StringSafe().Length>0) // check if SeType and SeCalc are not blank
                 {
                     var keyCalc = frmMstL2.Find(x=>x.F2CALC == inComing.SeCalc); // initialize a search key with the calculation method
-                    if(keyCalc != null)
-                    if (inComing.SeLend.StringSafe().Length>0) // check if SeLend is not blank
+                    if (keyCalc != null)
                     {
-                        var key06 = frmMstL2.Find(x=>x.F2Type == inComing.SeType && x.F2Lend == inComing.SeLend); // initialize a search key with the type and lending type
-                        if (key06 != null) // search for the first record with the given type and lending type
+                        if (inComing.SeLend.StringSafe().Length > 0) // check if SeLend is not blank
                         {
-                            if (inComing.SeEfft >= key06.F2Efft && inComing.SeEfft < key06.F2Efft)
+                            var key06 = frmMstL2.Find(x => x.F2Type == inComing.SeType && x.F2Lend == inComing.SeLend); // initialize a search key with the type and lending type
+                            if (key06 != null) // search for the first record with the given type and lending type
+                            {
+                                if (inComing.SeEfft >= key06.F2Efft && inComing.SeEfft < key06.F2Efft)
                                 {
                                     inComing.SeForm = key06.F2Form; // set SeForm to the form number
                                 }
-                            
+
+                            }
                         }
                     }
+                    else // if SeForm is not blank
+                    {
+                        var key07 = frmMstL2.Find(x=>x.F2Type == inComing.SeType && x.F2CALC == inComing.SeCalc ); // initialize a search key with the type and calculation method
+                        if (key07 != null) // search for the first record with the given type and calculation method
+                        {
+
+                            if (inComing.SeEfft >= key07.F2Efft && inComing.SeEfft < key07.F2Expr)
+                            {
+                                inComing.SeForm = key07.F2Form; // set SeForm to the form number
+                            }
+                        }
+                    }
+
                 }
             }
+            
 
             if (string.IsNullOrWhiteSpace(inComing.SeCalc))
             {
-                if (inComing.SeAgnt >= "D " && inComing.SeAgnt <= "D99999 ")
+                int portion =(int) Utils.ParseNumControlledReturn(inComing.SeAgnt.Substring(1, inComing.SeAgnt.Length - 1));
+                if (portion>0 && portion <= 99999)
                 {
                     inComing.SeCalc = "DP";
                 }
             }
         }
-        private void GetLifeCoverageCode()
-        {
-            if (inComing.SeLif>0)
-            {
-                decimal SmLif = 99999;
-                decimal Key02_Fld01 = inComing.SeLif;
-                string Key02_Fld02 = inComing.SeCalc;
-                PrdCovL1.Key02 = Key02_Fld01 + Key02_Fld02;
-                bool found = false;
 
-                do
-                {
-                    if (inComing.SeEffL >= inComing.PCEfft && inComing.SeEffL <= inComing.PcExpr)
-                    {
-                        SmLif = inComing.PcCovC;
-                        found = true;
-                    }
-                    else
-                    {
-                        PrdCovL1.ReadNext();
-                    }
-                } while (!found && !PrdCovL1.EOF());
-            }
-        }
         public void HomeSavings()
         {
             if (inComing.SeAgnt == "D10059    " || inComing.SeAgnt == "D10060    " || inComing.SeAgnt == "D10061    ")
@@ -341,19 +337,17 @@ namespace AS400Project.Web.Services
             if (inComing.SeLif != 0 && inComing.SeLif != 0)
             {
                 susMstP.SmLif = 99999;
-                Key02_Fld01 = inComing.SeLif;
-                Key02_Fld02 = inComing.SeCalc;
-                Key02 = new Tuple<string, string>(Key02_Fld01, Key02_Fld02);
-                var pcCovC = "";
+
+                int pcCovC = 0;
                 foreach (var record in PrdCovL1)
                 {
-                    if (record.PcCovC != null && record.PcCovC.Trim() != "" && inComing.SeEffL >= record.PCEfft && inComing.SeEffL <= record.PcExpr)
+                    if (record.PcCovC != null && record.PcCovC != 0 && inComing.SeEffL >= record.PCEfft && inComing.SeEffL <= record.PcExpr)
                     {
-                        pcCovC = record.PcCovC.Trim();
+                        pcCovC = record.PcCovC;
                         break;
                     }
                 }
-                if (pcCovC.Trim() != "") susMstP.SmLif = int.Parse(pcCovC);
+                if (pcCovC >0) susMstP.SmLif = pcCovC;
             }
         }
 
@@ -408,7 +402,7 @@ namespace AS400Project.Web.Services
         }
         public void ReadAOMOB()
         {
-            GapCovC = "0";
+            GapCovC = 0;
             if (inComing.SeFut17 != 0)
             {
                 GapCovC = inComing.SeFut17;
@@ -494,7 +488,7 @@ namespace AS400Project.Web.Services
                 DateTime WorkDate2 = inComing.SeExpr;
                 double Diff = WorkDate2.Subtract(WorkDate1).TotalDays / 30;
                 inComing.SeTerm = (int)Diff;
-                SmTerm = Diff;
+                susMstP.SmTerm = (int)Diff;
             }
 
             // Default the frequency to 12 is not supplied by Four Point
@@ -765,7 +759,7 @@ namespace AS400Project.Web.Services
             susMstP.SmSovD = inComing.SeSovD;
             susMstP.SmExcd = "";
             susMstP.SmExcP = 0;
-            susMstP.SmDatA = DateTime.Now.TimeOfDay;
+            susMstP.SmData = DateTime.Now;              //might need to be a time value
             susMstP.SmUsrA = UserID;
             susMstP.SmDatU = new DateTime();
             susMstP.SmUsrU = "";
@@ -781,12 +775,12 @@ namespace AS400Project.Web.Services
             susMstP.SmGEfft = 0;
             susMstP.SmGExpr = 0;
             susMstP.SmGStat = "";
-            susMstP.SmGDate = 0;
+            susMstP.SmGDate = DateTime.MinValue;
             susMstP.Smmntf = inComing.SeMntf;
             CertHold = "";
             susMstP.SmCert2 = inComing.SeCert2;
 
-            if (susMstP.SmLif == 0 && susMstP.SmDis == 0 && susMstP.SmDebt == 0 && susMstP.GapCovC != "0")
+            if (susMstP.SmLif == 0 && susMstP.SmDis == 0 && susMstP.SmDebt == 0 && GapCovC != 0)
             {
                 //
             }
@@ -825,7 +819,7 @@ namespace AS400Project.Web.Services
         }
         public void WriteAOMOB()
         {
-            if (GapCovC != "0")
+            if (GapCovC != 0)
             {
                 susMstP.SmVIN = inComing.SeVIN;         // GAP: Auto VIN Number
                 susMstP.SmYear = inComing.SeYear;       // GAP: Auto Year

@@ -6,6 +6,7 @@ using AS400Project.Services;
 using AS400Project.Services.Models;
 using AS400Project.Web.Models;
 using System.IO;
+using Utilities;
 
 namespace AS400Project.Web.Controllers
 {
@@ -52,16 +53,21 @@ namespace AS400Project.Web.Controllers
                                 var _billingExport = _service.ConvertToEntity(fileLine, pattern, new billingExport());
                                 billingExport _billingEntity = (billingExport)Convert.ChangeType(entity, typeof(billingExport));
                                 //now we have the actual class, which we can build with the other functions
-
                                 billingExportFunctions _functions = new billingExportFunctions(_billingEntity);
-                                _functions.HomeSavings();
-                                _functions.Clear();
-                                _functions.ReadAOMOB();
-                                _functions.Form();
-                                _functions.Custom90338();
-                                _functions.Life();
-                                _functions.Disability();
-                                _functions.DebtProt();
+                                if (_billingEntity.SeCert.StringSafe().Length > 0)
+                                {
+                                    _functions.HomeSavings();
+                                    _functions.Clear();
+                                    _functions.ReadAOMOB();
+                                    _functions.Form();
+                                    _functions.Custom90338();
+                                    _functions.Life();
+                                    _functions.Disability();
+                                    _functions.DebtProt();
+                                    _functions.Write();
+                                    _functions.WriteAOMOB();
+                                }
+                                _functions.Update();
                             }
                         }
                     }
