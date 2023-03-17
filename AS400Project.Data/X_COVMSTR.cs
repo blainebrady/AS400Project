@@ -12,8 +12,8 @@ namespace AS400Project.Data
 
         public virtual string CmAgnt { get; set; }
         public virtual string CmCert { get; set; }
-        public virtual decimal CMIDN1 { get; set; }
-        public virtual decimal CMIDN2 { get; set; }
+        public virtual decimal CmIDN1 { get; set; }
+        public virtual decimal CmIDN2 { get; set; }
         public virtual int CMFPRM { get; set; }
         public virtual int CMEFFT { get; set; }
         public virtual int CMEXPR { get; set; }
@@ -40,8 +40,8 @@ namespace AS400Project.Data
             modelBuilder.Entity<X_COVMSTR>().Property(x => x.CmAgnt).HasMaxLength(10);
 
             modelBuilder.Entity<X_COVMSTR>().Property(x => x.CmCert).HasMaxLength(20);
-            modelBuilder.Entity<X_COVMSTR>().Property(x => x.CMIDN1).HasPrecision(9, 0);
-            modelBuilder.Entity<X_COVMSTR>().Property(x => x.CMIDN2).HasPrecision(9, 0);
+            modelBuilder.Entity<X_COVMSTR>().Property(x => x.CmIDN1).HasPrecision(9, 0);
+            modelBuilder.Entity<X_COVMSTR>().Property(x => x.CmIDN2).HasPrecision(9, 0);
             modelBuilder.Entity<X_COVMSTR>().Property(x => x.CMFPRM);
             modelBuilder.Entity<X_COVMSTR>().Property(x => x.CMEFFT);
             modelBuilder.Entity<X_COVMSTR>().Property(x => x.CMEXPR);

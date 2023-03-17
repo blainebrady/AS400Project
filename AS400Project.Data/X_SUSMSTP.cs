@@ -131,7 +131,7 @@ namespace AS400Project.Data
         public virtual decimal SSmLine { get; set; }
         public virtual string SmDeal { get; set; }
         public virtual decimal SmLif { get; set; }
-        public virtual int SmDis { get; set; }
+        public virtual decimal SmDis { get; set; }
         public virtual decimal SmDebt { get; set; }
         public virtual int SmFut1 { get; set; }
         public virtual int SmFut2 { get; set; }

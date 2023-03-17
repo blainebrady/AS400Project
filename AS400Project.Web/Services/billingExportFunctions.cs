@@ -9,15 +9,20 @@ using System.Diagnostics.Metrics;
 using System.Runtime.Intrinsics.X86;
 using System.Xml.Linq;
 using Utilities;
+using System.Runtime.ConstrainedExecution;
+using System.Threading.Channels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace AS400Project.Web.Services
 {
     public class billingExportFunctions
     {
-        public billingExport inComing { get; set; } 
-        public X_SUSMSTP susMstP {get; set;}                                //this will be the outgoing class
+        public billingExport inComing { get; set; }
+        public X_SUSMSTP susMstP { get; set; }                                //this will be the outgoing class
         public List<PrdCovP> PrdCovL1 { get; set; }
         public List<PrdCovP2> PrdCovL2 { get; set; }
+        public List<X_COVMSTR> covmstl1 { get; set; }
+        public List<X_BILDTLP> BilDtlL2 { get; set;}
         public int GapCovC { get; set; }
         private string WrkNameS { get; set; }
         private string CertHold { get; set; }
@@ -444,17 +449,18 @@ namespace AS400Project.Web.Services
         // Begin Service Program
         public void Write()
         {
+            string TestPhone1 = "";
             if (inComing.SelNam1 == "HIBBARD" && inComing.SelNam1 == "DONNA")
             {
                 // customer id 123456789 should not be used if there is coverage need to use that id
                 // otherwise need to reset it
                 if (inComing.SeIDN1 == 123456789 || inComing.SeIDN2 == 123456789)
                 {
-                    covmstl1.key08.Chain();
-                    if (*in25 == *off)
+                    var item = covmstl1.Find(x=>x.CmIDN1 == 123456789);//key08 is the original search value here
+                    if (item != null)
                     {
-                        CmIDN1 = inComing.SeIDN1;
-                        CmIDN2 = inComing.SeIDN2;
+                        item.CmIDN1 = inComing.SeIDN1;
+                        item.CmIDN2 = inComing.SeIDN2;
                     }
                     else
                     {
@@ -635,7 +641,7 @@ namespace AS400Project.Web.Services
             susMstP.SmTrmP = inComing.SeTrmP;
             if (inComing.SeExpP == Utils.ParseDateControlledReturn("01/01/01"))
             {
-                inComing.SeExpP = 0;
+                inComing.SeExpP = DateTime.MinValue;
             }
             if (!inComing.SeExpP.DateNotNull() && inComing.SeDebt != 0)
             {
@@ -648,7 +654,7 @@ namespace AS400Project.Web.Services
             }
             susMstP.SmExpP = inComing.SeExpP;
             susMstP.SmLif = inComing.SeLif;
-            susMstP.SmDis = inComing.SeDis;
+            susMstP.SmDis = Utils.ParseNumControlledReturn(inComing.SeDis);
             susMstP.SmDebt = inComing.SeDebt;
             susMstP.SmFut1 = 0;
             susMstP.SmFut2 = 0;
@@ -760,7 +766,7 @@ namespace AS400Project.Web.Services
             susMstP.SmExcd = "";
             susMstP.SmExcP = 0;
             susMstP.SmData = DateTime.Now;              //might need to be a time value
-            susMstP.SmUsrA = UserID;
+            susMstP.SmUsrA = inComing.UserId;
             susMstP.SmDatU = new DateTime();
             susMstP.SmUsrU = "";
             susMstP.SmPanI = inComing.SePanI;
@@ -791,9 +797,11 @@ namespace AS400Project.Web.Services
                     susMstP.SmCnlL = 0;
                     susMstP.SmCnlD = 0;
 
-
+                    //If "Billed"--Cancel.If Not--Let system delete this cert 110607 101000
+                    var Key08 = BilDtlL2.Find(x => x.processed == true);
+                    if (Key08 != null) 
                     {
-                        BdBill = susMstP.SmCnl;
+                        Key08.BdBill = susMstP.SmCnl;
                         CertHold = inComing.SeCert2;
                         susMstP.SmCert2 = "";
                     }
@@ -817,6 +825,10 @@ namespace AS400Project.Web.Services
             susMstP.SmCert = inComing.SeCert;
             susMstP.SmCert2 = inComing.SeCert2;
         }
+        public void Update()
+        {
+            //Delete SusMstR2;              this is probably a replacement of the data
+        }
         public void WriteAOMOB()
         {
             if (GapCovC != 0)
@@ -839,19 +851,15 @@ namespace AS400Project.Web.Services
             inComing.SeFut1 = "0000000000";
             inComing.SeFut2 = "0000000000";
             inComing.SeFut17 = GapCovC;
-            Key04_Fld01 = inComing.SeDebt + inComing.SeFut1 + inComing.SeFut2;
-
-            while (true)
+            string Key04 = inComing.SeDebt + inComing.SeFut1 + inComing.SeFut2;                         //not sure of the values here
+            // Chain to PrdCovL2 file
+            var record = PrdCovL2.Find(x => x.P2Calc == Key04);
+            if (record != null)
             {
-                // Chain to PrdCovL2 file
-                PrdCovL2_Key04 record = PrdCovL2_Key04.Chain(Key04);
-                if (record == null) break;
-
-                if (inComing.SeEffP <= P2Expr)
+                if (inComing.SeEffP <= record.P2Expr)
                 {
-                    susMstP.SmDebt = inComing.P2CovC;
-                    inComing.SeCalc = inComing.P2Calc;
-                    break;
+                    susMstP.SmDebt = record.P2CovC;
+                    inComing.SeCalc = record.P2Calc;
                 }
             }
 
@@ -865,11 +873,11 @@ namespace AS400Project.Web.Services
                 susMstP.SmCnlD = 0;
 
                 // If "Billed"--Cancel. If Not--Let system delete this cert
-                BilDtlL2_Key08.SetGt(Key08);
-                BilDtlL2_Key08 record = BilDtlL2_Key08.ReadPe(Key08);
-                if (record != null)
+                
+                var _record = BilDtlL2.Find(x=> x.processed = true);
+                if (_record != null)
                 {
-                    BdBill = susMstP.SmCnl;
+                    _record.BdBill = susMstP.SmCnl;
                     CertHold = inComing.SeCert2;
                     susMstP.SmCert2 = "";
                 }
