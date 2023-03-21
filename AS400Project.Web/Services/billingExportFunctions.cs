@@ -24,6 +24,7 @@ namespace AS400Project.Web.Services
         public List<X_COVMSTR> covmstl1 { get; set; }
         public List<X_BILDTLP> BilDtlL2 { get; set;}
         public int GapCovC { get; set; }
+        private readonly string sysDte;
         private string WrkNameS { get; set; }
         private string CertHold { get; set; }
         private readonly DateTime sysDate = DateTime.Now;
@@ -31,10 +32,9 @@ namespace AS400Project.Web.Services
         public billingExportFunctions(billingExport _inComing)
         {
             susMstP = new X_SUSMSTP();
-            inComing = new billingExport();
             inComing = _inComing;
             
-            string sysDte = (sysDate.Year * 10000 + sysDate.Month * 100 + sysDate.Day).ToString();
+            sysDte = (sysDate.Year * 10000 + sysDate.Month * 100 + sysDate.Day).ToString();
 
 
             if (inComing.SeCert != "")
@@ -51,11 +51,6 @@ namespace AS400Project.Web.Services
             {
                 inComing.SeFut2 = "0000000000";
             }
-        }
-
-        public void AddKeyField(string fieldName)
-        {
-            keyFields.Add(fieldName);
         }
         public void Clear()
         {

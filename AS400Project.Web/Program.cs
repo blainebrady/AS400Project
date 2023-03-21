@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using AS400Project.Data;
+using AS400Project.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 using IHost host = Host.CreateDefaultBuilder(args).Build();
@@ -31,10 +32,11 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
+app.UseMiddleware<ApiKeyMiddleware>();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Import}/{action=Index}/{Id?}"
+    pattern: "{controller=As400}/{action=Index}/{Id?}"
     );
 
 app.Run();

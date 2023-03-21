@@ -25,7 +25,7 @@ namespace AS400Project.Web.Controllers
         }
         [Route("upload")]
         [HttpPost]
-        public async Task<IActionResult> FileUpload([FromForm(Name = "files")] List<IFormFile> files, TEntity entity)
+        public async Task<IActionResult> FileUpload([FromForm(Name = "files")] List<IFormFile> files)
         {
             Settings settings = _configuration.GetValue<Settings>("settings");
             try
@@ -51,7 +51,7 @@ namespace AS400Project.Web.Controllers
                             foreach (string fileLine in fileString)
                             {
                                 var _billingExport = _service.ConvertToEntity(fileLine, pattern, new billingExport());
-                                billingExport _billingEntity = (billingExport)Convert.ChangeType(entity, typeof(billingExport));
+                                billingExport _billingEntity = (billingExport)Convert.ChangeType(file, typeof(billingExport));
                                 //now we have the actual class, which we can build with the other functions
                                 billingExportFunctions _functions = new billingExportFunctions(_billingEntity);
                                 if (_billingEntity.SeCert.StringSafe().Length > 0)
@@ -81,9 +81,19 @@ namespace AS400Project.Web.Controllers
             }
 
 
-            return Ok(entity);
+            return Ok("File Uploaded");
         }
-
+        [Route("test")]
+        [HttpPost]
+        public string testIP(string ip)
+        {
+            if (!string.IsNullOrEmpty(ip))
+            {
+                return ip;
+            }
+            else
+            { return "Null value"; }
+        }
         private List<Diagram> convertBillingExport()
         {
             List<Diagram> diagram = new List<Diagram>
